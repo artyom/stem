@@ -120,4 +120,10 @@ func (m *Mount) Check(root string) error {
 
 func init() {
 	log.SetFlags(log.Lshortfile)
+	flag.Usage = usage
+}
+
+func usage() {
+	fmt.Fprintf(os.Stderr, "Usage: %s [flags] command-in-chroot [command args]\n", path.Base(os.Args[0]))
+	flag.PrintDefaults()
 }
