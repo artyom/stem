@@ -81,9 +81,11 @@ func main() {
 		log.Print(s)
 		p.Signal(s)
 	}(signals, cmd.Process)
-	if err := cmd.Wait(); err != nil {
-		log.Fatal(err)
+	err = cmd.Wait()
+	if err != nil {
+		log.Fatal(exitReason(err) + " / " + processStats(cmd.ProcessState))
 	}
+	log.Print(processStats(cmd.ProcessState))
 }
 
 type config struct {
@@ -145,4 +147,88 @@ func init() {
 func usage() {
 	fmt.Fprintf(os.Stderr, "Usage: %s [flags] command-in-chroot [command args]\n", path.Base(os.Args[0]))
 	flag.PrintDefaults()
+}
+
+// exitReason translates error returned by os.Process.Wait() into human-readable
+// form.
+func exitReason(err error) string {
+	exiterr, ok := err.(*exec.ExitError)
+	if !ok {
+		return err.Error()
+	}
+	status := exiterr.Sys().(syscall.WaitStatus)
+	switch {
+	case status.Exited():
+		return fmt.Sprintf("exit code %d", status.ExitStatus())
+	case status.Signaled():
+		return fmt.Sprintf("exit code %d (%s)",
+			128+int(status.Signal()), status.Signal())
+	}
+	return err.Error()
+}
+
+// processStats returns finished process' CPU / memory statistics in
+// human-readable form.
+func processStats(st *os.ProcessState) string {
+	if st == nil {
+		return ""
+	}
+	if r, ok := st.SysUsage().(*syscall.Rusage); ok && r != nil {
+		return fmt.Sprintf("sys: %s, user: %s, maxRSS: %s",
+			st.SystemTime(),
+			st.UserTime(),
+			ByteSize(r.Maxrss<<10),
+		)
+	}
+	return fmt.Sprintf("sys: %s, user: %s", st.SystemTime(), st.UserTime())
+}
+
+// maxRSS returns max RSS usage from Rusage struct; if none can be extracted,
+// 0 is returned.
+func maxRSS(st *os.ProcessState) int64 {
+	if st == nil {
+		return 0
+	}
+	if r, ok := st.SysUsage().(*syscall.Rusage); ok && r != nil {
+		return r.Maxrss << 10
+	}
+	return 0
+}
+
+// ByteSize implements Stringer interface for printing size in human-readable
+// form
+type ByteSize float64
+
+const (
+	_           = iota // ignore first value by assigning to blank identifier
+	KB ByteSize = 1 << (10 * iota)
+	MB
+	GB
+	TB
+	PB
+	EB
+	ZB
+	YB
+)
+
+func (b ByteSize) String() string {
+	switch {
+	case b >= YB:
+		return fmt.Sprintf("%.2fYB", b/YB)
+	case b >= ZB:
+		return fmt.Sprintf("%.2fZB", b/ZB)
+	case b >= EB:
+		return fmt.Sprintf("%.2fEB", b/EB)
+	case b >= PB:
+		return fmt.Sprintf("%.2fPB", b/PB)
+	case b >= TB:
+		return fmt.Sprintf("%.2fTB", b/TB)
+	case b >= GB:
+		return fmt.Sprintf("%.2fGB", b/GB)
+	case b >= MB:
+		return fmt.Sprintf("%.2fMB", b/MB)
+	case b >= KB:
+		return fmt.Sprintf("%.2fKB", b/KB)
+	}
+	return fmt.Sprintf("%.2fB", b)
 }
