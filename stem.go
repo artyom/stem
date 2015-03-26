@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path"
 	"runtime"
 	"strings"
@@ -37,6 +38,15 @@ func main() {
 			log.Fatal(err)
 		}
 	}
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGUSR1,
+		syscall.SIGUSR2,
+		syscall.SIGQUIT,
+	)
 
 	// need to lock thread so that mounts are done in the same thread to
 	// which Unshare was applied
@@ -62,7 +72,16 @@ func main() {
 	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
+	if err := cmd.Start(); err != nil {
+		log.Fatal(err)
+	}
+	runtime.UnlockOSThread()
+	go func(sigch chan os.Signal, p *os.Process) {
+		s := <-sigch
+		log.Print(s)
+		p.Signal(s)
+	}(signals, cmd.Process)
+	if err := cmd.Wait(); err != nil {
 		log.Fatal(err)
 	}
 }
