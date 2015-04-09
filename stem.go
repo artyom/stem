@@ -69,6 +69,7 @@ func main() {
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Chroot:     conf.Dir,
 		Cloneflags: syscall.CLONE_NEWPID,
+		Pdeathsig:  syscall.SIGKILL,
 	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
