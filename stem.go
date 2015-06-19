@@ -20,9 +20,7 @@ import (
 
 func main() {
 	conf := config{}
-	if err := autoflags.Define(&conf); err != nil {
-		log.Fatal(err)
-	}
+	autoflags.Define(&conf)
 	flag.Parse()
 	if len(flag.Args()) == 0 {
 		flag.Usage()
