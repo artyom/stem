@@ -82,6 +82,9 @@ func run(conf *config, args []string) error {
 	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	if isDevice(os.Stdin) {
+		cmd.Stdin = os.Stdin
+	}
 	if err := cmd.Start(); err != nil {
 		return err
 	}
@@ -247,4 +250,13 @@ func (b ByteSize) String() string {
 		return fmt.Sprintf("%.2fKB", b/KB)
 	}
 	return fmt.Sprintf("%.2fB", b)
+}
+
+// isDevice returns true if f is a device file
+func isDevice(f *os.File) bool {
+	st, err := f.Stat()
+	if err != nil {
+		return false
+	}
+	return st.Mode()&os.ModeDevice != 0
 }
