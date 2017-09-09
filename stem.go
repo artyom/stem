@@ -5,7 +5,6 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -21,21 +20,25 @@ import (
 )
 
 func main() {
-	conf := config{}
-	autoflags.Define(&conf)
-	flag.Parse()
+	conf := &config{}
+	autoflags.Parse(conf)
 	if len(flag.Args()) == 0 {
 		flag.Usage()
 		os.Exit(1)
 	}
+	if err := run(conf); err != nil {
+		log.Fatal(err)
+	}
+}
 
+func run(conf *config) error {
 	mounts, err := conf.Mounts.Get()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	for _, mt := range mounts {
 		if err := mt.Check(conf.Dir); err != nil {
-			log.Fatal(err)
+			return err
 		}
 	}
 	signals := make(chan os.Signal, 1)
@@ -52,17 +55,17 @@ func main() {
 	// which Unshare was applied
 	runtime.LockOSThread()
 	if err := syscall.Unshare(syscall.CLONE_NEWNS); err != nil {
-		log.Fatal(err)
+		return err
 	}
 	for _, m := range mounts {
 		to := path.Join(conf.Dir, m.To)
 		if err := syscall.Mount(m.From, to, "", syscall.MS_BIND, ""); err != nil {
-			log.Fatalf("mount %s to %s: %v", m.From, to, err)
+			return fmt.Errorf("mount %s to %s: %v", m.From, to, err)
 		}
 	}
 	if conf.MountDev {
 		if err := syscall.Mount("none", path.Join(conf.Dir, "dev"), "devtmpfs", 0, ""); err != nil {
-			log.Fatal("mount /dev inside chroot: " + err.Error())
+			return fmt.Errorf("mount /dev inside chroot: %v", err)
 		}
 	}
 	cmd := exec.Command(flag.Args()[0], flag.Args()[1:]...)
@@ -74,7 +77,7 @@ func main() {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Start(); err != nil {
-		log.Fatal(err)
+		return err
 	}
 	runtime.UnlockOSThread()
 	go func(sigch chan os.Signal, p *os.Process) {
@@ -84,11 +87,12 @@ func main() {
 	}(signals, cmd.Process)
 	err = cmd.Wait()
 	if err != nil {
-		log.Fatal(exitReason(err) + " / " + processStats(cmd.ProcessState))
+		return fmt.Errorf("%s / %s", exitReason(err), processStats(cmd.ProcessState))
 	}
 	if !conf.Quiet {
 		log.Print(processStats(cmd.ProcessState))
 	}
+	return nil
 }
 
 type config struct {
@@ -111,7 +115,7 @@ func (mounts Mounts) Get() ([]Mount, error) {
 	for i, cand := range mounts {
 		s := strings.SplitN(cand, ":", 2)
 		if len(s) != 2 || s[0] == "" || s[1] == "" {
-			return nil, errors.New("invalid flag format, should be \"souce:destination\": " + cand)
+			return nil, fmt.Errorf("invalid flag format, should be 'souce:destination': %q", cand)
 		}
 		out[i] = Mount{From: s[0], To: s[1]}
 	}
@@ -125,17 +129,17 @@ type Mount struct {
 
 func (m *Mount) Check(root string) error {
 	if !path.IsAbs(m.From) {
-		return errors.New("mounts should use absolute paths: " + m.From)
+		return fmt.Errorf("mounts should use absolute paths: %q", m.From)
 	}
 	if !path.IsAbs(m.To) {
-		return errors.New("mounts should use absolute paths: " + m.To)
+		return fmt.Errorf("mounts should use absolute paths: %q", m.To)
 	}
 	if _, err := os.Stat(m.From); err != nil {
 		return err
 	}
 	to := path.Join(root, m.To)
 	if to == root {
-		return errors.New("mount destination should not be the chroot directory itself")
+		return fmt.Errorf("mount destination should not be the chroot directory itself")
 	}
 	if _, err := os.Stat(to); err != nil {
 		return err
@@ -144,7 +148,8 @@ func (m *Mount) Check(root string) error {
 }
 
 func init() {
-	log.SetFlags(log.Lshortfile)
+	log.SetFlags(0)
+	log.SetPrefix(path.Base(os.Args[0]) + ": ")
 	flag.Usage = usage
 }
 
