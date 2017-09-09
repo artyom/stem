@@ -77,7 +77,7 @@ func run(conf *config, args []string) error {
 	cmd.Dir = "/"
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Chroot:     conf.Dir,
-		Cloneflags: syscall.CLONE_NEWPID,
+		Cloneflags: syscall.CLONE_NEWPID | syscall.CLONE_NEWIPC | syscall.CLONE_NEWUTS,
 		Pdeathsig:  syscall.SIGKILL,
 	}
 	cmd.Stdout = os.Stdout
