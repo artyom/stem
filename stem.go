@@ -42,6 +42,7 @@ func run(conf *config) error {
 		}
 	}
 	signals := make(chan os.Signal, 1)
+	defer close(signals)
 	signal.Notify(signals,
 		syscall.SIGHUP,
 		syscall.SIGINT,
@@ -50,6 +51,7 @@ func run(conf *config) error {
 		syscall.SIGUSR2,
 		syscall.SIGQUIT,
 	)
+	defer signal.Stop(signals)
 
 	// need to lock thread so that mounts are done in the same thread to
 	// which Unshare was applied
@@ -81,9 +83,10 @@ func run(conf *config) error {
 	}
 	runtime.UnlockOSThread()
 	go func(sigch chan os.Signal, p *os.Process) {
-		s := <-sigch
-		log.Print(s)
-		p.Signal(s)
+		for s := range sigch {
+			log.Print(s)
+			p.Signal(s)
+		}
 	}(signals, cmd.Process)
 	err = cmd.Wait()
 	if err != nil {
