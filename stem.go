@@ -74,6 +74,7 @@ func run(conf *config, args []string) error {
 		}
 	}
 	cmd := exec.Command(args[0], args[1:]...)
+	cmd.Dir = "/"
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Chroot:     conf.Dir,
 		Cloneflags: syscall.CLONE_NEWPID,
