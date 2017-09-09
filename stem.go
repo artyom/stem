@@ -85,6 +85,9 @@ func run(conf *config, args []string) error {
 	if isDevice(os.Stdin) {
 		cmd.Stdin = os.Stdin
 	}
+	if conf.Noenv {
+		cmd.Env = []string{}
+	}
 	if err := cmd.Start(); err != nil {
 		return err
 	}
@@ -110,6 +113,7 @@ type config struct {
 	MountDev bool   `flag:"withdev,mount devtmpfs on /dev inside chroot (directory should exist)"`
 	Mounts   Mounts `flag:"mount,bind-mount pairs "target:destination", where destination is relative to chroot dir"`
 	Quiet    bool   `flag:"q,be quiet if everything's ok"`
+	Noenv    bool   `flag:"noenv,empty environment variables"`
 }
 
 type Mounts []string
