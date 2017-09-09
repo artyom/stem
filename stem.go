@@ -26,12 +26,15 @@ func main() {
 		flag.Usage()
 		os.Exit(1)
 	}
-	if err := run(conf); err != nil {
+	if err := run(conf, flag.Args()); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func run(conf *config) error {
+func run(conf *config, args []string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("empty argument list")
+	}
 	mounts, err := conf.Mounts.Get()
 	if err != nil {
 		return err
@@ -70,7 +73,7 @@ func run(conf *config) error {
 			return fmt.Errorf("mount /dev inside chroot: %v", err)
 		}
 	}
-	cmd := exec.Command(flag.Args()[0], flag.Args()[1:]...)
+	cmd := exec.Command(args[0], args[1:]...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Chroot:     conf.Dir,
 		Cloneflags: syscall.CLONE_NEWPID,
