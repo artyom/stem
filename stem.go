@@ -111,7 +111,7 @@ func run(conf *config, args []string) error {
 type config struct {
 	Dir      string `flag:"root,root filesystem to start chrooted process into"`
 	MountDev bool   `flag:"withdev,mount devtmpfs on /dev inside chroot (directory should exist)"`
-	Mounts   Mounts `flag:"mount,bind-mount pairs "target:destination", where destination is relative to chroot dir"`
+	Mounts   Mounts `flag:"mount,bind-mount pairs 'target:destination', where destination is relative to chroot dir"`
 	Quiet    bool   `flag:"q,be quiet if everything's ok"`
 	Noenv    bool   `flag:"noenv,empty environment variables"`
 }
