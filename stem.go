@@ -63,6 +63,9 @@ func run(conf *config, args []string) error {
 	if err := syscall.Unshare(syscall.CLONE_NEWNS); err != nil {
 		return err
 	}
+	if err := syscall.Mount("/", "/", "", syscall.MS_PRIVATE, ""); err != nil {
+		return fmt.Errorf("remounting root as private: %v", err)
+	}
 	for _, m := range mounts {
 		to := path.Join(conf.Dir, m.To)
 		if err := syscall.Mount(m.From, to, "", syscall.MS_BIND, ""); err != nil {
