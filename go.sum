@@ -1,0 +1,6 @@
+github.com/artyom/autoflags v1.1.0 h1:Cz3qb/qSkhmt/Zgsu3D/HwMJtKYUSV5kctI6O9bekv4=
+github.com/artyom/autoflags v1.1.0/go.mod h1:Th9KgAVvFcYp7t8b//Pu21xHjExLpzr4SXCbwVbHL7Y=
+github.com/artyom/bytesize v0.0.0-20170915114729-c9e755de1330 h1:u1p8QHLsrh6d0MQDmsbfcr/vdNgttyZU7PqXI6Ls6XA=
+github.com/artyom/bytesize v0.0.0-20170915114729-c9e755de1330/go.mod h1:35p0UI2r/FcQQX7pPolzk1IvpPoA+D3SBQjdz7nBPMI=
+github.com/artyom/exitstatus v0.0.0-20170915120126-0a657065c12f h1:l8/JgscnxYzPKFIcWos/0duh7p0gMBBaVsoiIplq+LM=
+github.com/artyom/exitstatus v0.0.0-20170915120126-0a657065c12f/go.mod h1:lQ1tcItkhLiAn/WFIsA2weHHOQbPKkmNNACLZqFuptA=
